@@ -1,0 +1,20 @@
+﻿<Project>
+  <Grid ColumnSpacing="8" RowSpacing="8" >
+    <Grid.ColumnsProportions>
+      <Proportion/>
+      <Proportion/>
+    </Grid.ColumnsProportions>
+    <Grid.RowsProportions>
+      <Proportion/>
+      <Proportion/>
+    </Grid.RowsProportions>
+    <Label Id="label" Text="Hello, World!" />
+    <ComboBox GridColumn="1" >
+      <ListItem Text="Red" Color="#FF0000FF" />
+      <ListItem Text="Green" Color="#008000FF" />
+      <ListItem Text="Blue" Color="#0000FFFF" />
+    </ComboBox>
+    <Button Text="Show" GridRow="1" />
+    <SpinButton Nullable="True" Width="100" GridColumn="1" GridRow="1" />
+  </Grid>
+</Project>

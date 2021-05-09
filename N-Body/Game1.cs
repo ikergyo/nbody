@@ -1,6 +1,8 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using Myra.Graphics2D.UI;
+using System.Collections.Generic;
 
 namespace N_Body
 {
@@ -8,40 +10,34 @@ namespace N_Body
     public class Game1 : Game
     {
         private GraphicsDeviceManager _graphics;
-        private SpriteBatch _spriteBatch;
-
-        private Texture2D _texture;
-        private Vector2 _position;
+        private Desktop _desktop;
 
         const int Window_Width = 1280;
         const int Window_Height = 768;
-
-        float window_OffsetX = 0;
-        float window_OffsetY = 0;
-        Vector2 window_Offset;
-
+        StateController state;
         //Base config
-        int objectNumber = 1000;
-        int taskNumber = 1;
-
-        PhysicsController pc;
+        
+        //GameState activeState;
 
         public Game1()
         {
+
             _graphics = new GraphicsDeviceManager(this);
             _graphics.PreferredBackBufferWidth = Window_Width;
-            _graphics.PreferredBackBufferHeight = Window_Height;
-            window_OffsetX = Window_Width / 2;
-            window_OffsetY = Window_Height / 2;
-            window_Offset = new Vector2(window_OffsetX, window_OffsetY);
+            _graphics.PreferredBackBufferHeight = Window_Height;  
             Content.RootDirectory = "Content";
             IsMouseVisible = true;
+
+            //activeState = new SimulatorState(Window_Height, Window_Width, _graphics, GraphicsDevice, Content);
+            
+
+
         }
 
         protected override void Initialize()
         {
-            pc = new PhysicsController(taskNumber, 1500, 1, objectNumber, Window_Height, Window_Width);
 
+            //activeState = new MenuState(this, _graphics, GraphicsDevice, Content);
             #region test
             /*Physics.AddObject(new NObject("Main Sun", 0.0, 0.0, 0.0, 0.0, 0.015f, 1.98e+30, Color.Gold));
             Physics.AddObject(new NObject("Earth", 143.0, 0.0, 0.0, 0.0, 0.010f, 5.972e+24, Color.Aqua));
@@ -65,54 +61,23 @@ namespace N_Body
 
         protected override void LoadContent()
         {
-            _spriteBatch = new SpriteBatch(GraphicsDevice);
-
-            // TODO: use this.Content to load your game content here
-            for (int i = 0; i < Physics.objectIndex; i++)
-            {
-                NObject obj = Physics.objects[i];
-                obj.LoadTexture(Content.Load<Texture2D>("circle"));
-            }
-            //_texture = Content.Load<Texture2D>("circle");
-            
-
-            _position = new Vector2(0,0);
+            //activeState = new MenuState(this, _graphics, GraphicsDevice, Content);
+            //activeState.MakeActive(true);
+            state = new StateController(this, Window_Height, Window_Width, _graphics, GraphicsDevice, Content);
         }
         protected override void Update(GameTime gameTime)
         {
-            if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
-            {
-                pc.Exit();
-                Exit();
-            }
 
-            bool st = false;
-            if (Keyboard.GetState().IsKeyDown(Keys.S))
-                st = true;
-
-            pc.Control(st);
-
-
+            
+            state.Update(gameTime);
             base.Update(gameTime);
         }
 
         protected override void Draw(GameTime gameTime)
         {
-            GraphicsDevice.Clear(Color.Gray);
-
-            // TODO: Add your drawing code here
-            _spriteBatch.Begin();
-
-            for (int i = 0; i < Physics.objectIndex; i++)
-            {
-                NObject obj = Physics.objects[i];
-                System.Numerics.Vector2 objPos = obj.getDrawVector();
-                _spriteBatch.Draw(obj.Texture, new Vector2(objPos.X, objPos.Y) + window_Offset, null, obj.Color, 0, Vector2.Zero, obj.Size, SpriteEffects.None, 0);
-            }
-
-            _spriteBatch.End();
-
+            state.Draw(gameTime);
             base.Draw(gameTime);
         }
+
     }
 }

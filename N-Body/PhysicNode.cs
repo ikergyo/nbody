@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading;
 
 namespace N_Body
 {
@@ -9,27 +10,30 @@ namespace N_Body
     {
         static int _id = 0;
         public static List<TaskStatus> tasksStatus = new List<TaskStatus>();
+        
         public static double deltaTime = 1;
 
         public int Id { get; private set; }
 
         private int offset;
         private int steps;
-        
+        private ManualResetEvent wStatus;
+        private AutoResetEvent nStatus;
 
-        public PhysicNode(int threadNum)
+
+        public PhysicNode(int steps, ManualResetEvent wStatus, AutoResetEvent nStatus)
         {
             Id = _id++;
             offset = Id;
-            steps = threadNum;
-            tasksStatus.Add(TaskStatus.Finished);
+            this.steps = steps;
+            this.wStatus = wStatus;
+            this.nStatus = nStatus;
+            
         }
         public void CalculateVelocities()
         {
             while (Physics.globalRunning)
             {
-                if (tasksStatus[Id] == TaskStatus.Running)
-                {
                     for (int i = offset; i < Physics.objectIndex; i += steps)
                     {
                         for (int j = 0; j < Physics.objectIndex; j++)
@@ -49,18 +53,20 @@ namespace N_Body
 
                             double forx = dirx * forceTwo;
                             double fory = diry * forceTwo;
-
-                            Physics.objects[i].velx += (deltaTime * forx) / Physics.objects[i].Mass;
-                            Physics.objects[i].vely += (deltaTime * fory) / Physics.objects[i].Mass;
-                            Physics.objects[i].temp_posx += deltaTime * Physics.objects[i].velx;
-                            Physics.objects[i].temp_posy += deltaTime * Physics.objects[i].vely;
+                        if (Double.IsNaN(forx))
+                            forx = 0;
+                        if (Double.IsNaN(fory))
+                            fory = 0;
+                        lock (obj1)
+                            {
+                                obj1.velx += (deltaTime * forx) / obj1.Mass;
+                                obj1.vely += (deltaTime * fory) / obj1.Mass;
+                                obj1.temp_posx += deltaTime * obj1.velx;
+                                obj1.temp_posy += deltaTime * obj1.vely;
+                            }
                         }
                     }
-                    lock (tasksStatus)
-                    {
-                        tasksStatus[Id] = TaskStatus.Finished;
-                    }
-                }
+                WaitHandle.SignalAndWait(wStatus, nStatus);
             }
         }
     }

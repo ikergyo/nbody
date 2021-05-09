@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Xna.Framework.Input;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
@@ -11,6 +12,9 @@ namespace N_Body
     {
         static List<Task> tasks = new List<Task>();
         static List<PhysicNode> pNodes = new List<PhysicNode>();
+
+        public ManualResetEvent[] workerStatus;
+        public AutoResetEvent[] nextTimeStatus;
 
         int threadNum;
         int timeSlice;
@@ -29,42 +33,37 @@ namespace N_Body
             this.threadNum = threadNum;
             this.timeSlice = timeSlice;
             this.timeSteps = timeSteps;
+            
             Initialize();
         }
-        private bool IsFinished()
-        {
-            lock (PhysicNode.tasksStatus)
-            {
-                foreach (var item in PhysicNode.tasksStatus)
-                {
-
-                    if (item != TaskStatus.Finished)
-                        return false;
-
-                }
-                return true;
-            }
-            
-        }
+        
         private void Initialize()
         {
+            workerStatus = new ManualResetEvent[threadNum];
+            nextTimeStatus = new AutoResetEvent[threadNum];
             for (int i = 0; i < threadNum; i++)
             {
-                pNodes.Add(new PhysicNode(threadNum));
+                workerStatus[i] = new ManualResetEvent(false);
+                nextTimeStatus[i] = new AutoResetEvent(false);
+                pNodes.Add(new PhysicNode(threadNum, workerStatus[i], nextTimeStatus[i]));
                 tasks.Add(new Task(pNodes[i].CalculateVelocities, TaskCreationOptions.LongRunning));
             }
             tasks.Add(new Task(this.Run, TaskCreationOptions.LongRunning));
         }
         private void ResetWorkerRunning()
         {
-            lock (PhysicNode.tasksStatus)
+            for (int i = 0; i < threadNum; i++)
             {
-                for (int i = 0; i < PhysicNode.tasksStatus.Count; i++)
-                {
-                
-                    PhysicNode.tasksStatus[i] = TaskStatus.Running;
-                
-                }
+                workerStatus[i].Reset();
+                nextTimeStatus[i].Set();
+            }
+        }
+        public void SetAllStatus()
+        {
+            for (int i = 0; i < threadNum; i++)
+            {
+                workerStatus[i].Set();
+                nextTimeStatus[i].Set();
             }
         }
         public void Start()
@@ -81,27 +80,23 @@ namespace N_Body
             sw.Start();
             while (Physics.globalRunning)
             {
-                if (IsFinished())
+                WaitHandle.WaitAll(workerStatus);
+                Debug.WriteLine("Finished t: " + actualTime);
+                if (actualTime < timeSlice)
                 {
-                    Debug.WriteLine("Finished: " + actualTime);
-                    if (actualTime < timeSlice)
-                    {
-                        Physics.UpdatePositions();
-                        actualTime += timeSteps;
-                        ResetWorkerRunning();
-                    }
-                    else
-                    {
-                        sw.Stop();
-                        lastElapsed = sw.Elapsed;
-                        Debug.WriteLine("Elapsed time: " + lastElapsed);
-                        actualTime = 0.0;
-                        ResetWorkerRunning();
-
-                        sw.Restart();
-                    }
+                    Physics.UpdatePositions();
+                    actualTime += timeSteps;
                 }
-                Thread.Sleep(5);
+                else
+                {
+                    sw.Stop();
+                    lastElapsed = sw.Elapsed;
+                    Debug.WriteLine("Elapsed time: " + lastElapsed);
+                    actualTime = 0.0;
+                    MessageBox.Show("Elapsed Time", lastElapsed.ToString(), new[] { "Ok" });
+                    sw.Restart();
+                }
+                ResetWorkerRunning();
             }
         }
         

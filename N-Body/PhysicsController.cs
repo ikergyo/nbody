@@ -18,6 +18,7 @@ namespace N_Body
         public void Exit()
         {
             Physics.globalRunning = false;
+            tc.SetAllStatus();
             Task.WaitAll(tc.Tasks.ToArray());
         }
 
