@@ -11,3 +11,8 @@ N-Body parallel in C#
  
  After the start, the simulation will generate the map (objects) and with the 'S' key, the simulation can be started. It measures the the time, how fast will the simulation reach the 1500th period and when t = 1500 it will write the elapsed time as a messagebox. 
  If you close the the simulation will continue.
+
+
+# Example with 1000 object
+
+![image](https://user-images.githubusercontent.com/12836259/121678005-e92f9380-cab6-11eb-9ff1-a88e2cfd7fdb.png)
